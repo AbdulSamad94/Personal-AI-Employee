@@ -1,0 +1,14 @@
+{
+  "servers": [
+    {
+      "name": "email",
+      "command": "node",
+      "args": ["./mcp_servers/email/index.js"],
+      "env": {
+        "GMAIL_USER": "your@gmail.com",
+        "GMAIL_APP_PASSWORD": "your_app_password",
+        "DRY_RUN": "true"
+      }
+    }
+  ]
+}

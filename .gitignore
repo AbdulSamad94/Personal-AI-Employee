@@ -1,0 +1,14 @@
+.env
+token.json
+credentials.json
+whatsapp_session/
+__pycache__/
+node_modules/
+*.pyc
+vault/Logs/
+vault/whatsapp_session/
+*.egg-info/
+.venv/
+uv.lock
+.python-version
+skills-lock.json
