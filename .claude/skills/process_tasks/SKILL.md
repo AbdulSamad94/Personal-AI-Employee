@@ -48,7 +48,7 @@ For every task file, classify it as one of:
 ## Step 4 — Create Plan.md
 
 For EVERY task, create a plan file at:
-vault/Plans/PLAN*[task_name]*[YYYYMMDD_HHMMSS].md
+vault/Plans/PLAN_[task_name]_[YYYYMMDD_HHMMSS].md
 
 ## Use this exact format:
 
