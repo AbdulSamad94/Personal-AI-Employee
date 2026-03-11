@@ -1,14 +1,13 @@
 {
-  "servers": [
-    {
-      "name": "email",
-      "command": "node",
-      "args": ["./mcp_servers/email/index.js"],
+  "mcpServers": {
+    "email": {
+      "command": "uv",
+      "args": ["run", "mcp_servers/email/server.py"],
       "env": {
-        "GMAIL_USER": "your@gmail.com",
-        "GMAIL_APP_PASSWORD": "your_app_password",
-        "DRY_RUN": "true"
+        "GMAIL_USER": "${GMAIL_USER}",
+        "GMAIL_APP_PASSWORD": "${GMAIL_APP_PASSWORD}",
+        "DRY_RUN": "${DRY_RUN}"
       }
     }
-  ]
+  }
 }

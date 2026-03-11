@@ -33,11 +33,14 @@ def start_watcher(script_name):
 
 def main():
     watchers = {}
-    done_scripts = ["gmail_watcher.py", "linkedin_watcher.py"]
+    done_scripts = [
+        "gmail_watcher.py",
+        "linkedin_watcher.py",
+        "filesystem_watcher.py",  # Watchdog event-driven Inbox watcher
+        "approval_watcher.py",  # Approved → Action dispatcher
+    ]
     todo_scripts = [
         "whatsapp_watcher.py",
-        "filesystem_watcher.py",
-        "approval_watcher.py",
     ]
 
     print("\n--- AI Employee Orchestrator ---")
@@ -47,13 +50,13 @@ def main():
         proc = start_watcher(script)
         if proc:
             watchers[script] = proc
-            print(f"✅ {script.replace('.py', '')} - running (PID: {proc.pid})")
+            print(f"[OK] {script.replace('.py', '')} - running (PID: {proc.pid})")
         else:
-            print(f"❌ {script.replace('.py', '')} - failed to start")
+            print(f"[FAIL] {script.replace('.py', '')} - failed to start")
 
     # Note todo watchers
     for script in todo_scripts:
-        print(f"⬜ {script.replace('.py', '')} - not built yet")
+        print(f"[TODO] {script.replace('.py', '')} - not built yet")
 
     print("---------------------------------\n")
 
