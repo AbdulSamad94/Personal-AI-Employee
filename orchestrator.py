@@ -39,9 +39,7 @@ def main():
         "filesystem_watcher.py",  # Watchdog event-driven Inbox watcher
         "approval_watcher.py",  # Approved → Action dispatcher
     ]
-    todo_scripts = [
-        "whatsapp_watcher.py",
-    ]
+    todo_scripts = []
 
     print("\n--- AI Employee Orchestrator ---")
 

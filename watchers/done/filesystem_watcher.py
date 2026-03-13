@@ -52,25 +52,25 @@ def create_action_file(file_path: Path):
 
     # Note: Indentation intentionally kept flush left to prevent nested quoting errors
     content = f"""---
-type: file_drop
-original_name: {file_path.name}
-size: {file_path.stat().st_size} bytes
-received: {timestamp}
-status: pending
----
+            type: file_drop
+            original_name: {file_path.name}
+            size: {file_path.stat().st_size} bytes
+            received: {timestamp}
+            status: pending
+            ---
 
-## New File Received
+            ## New File Received
 
-A new file has been dropped into the Inbox folder.
+            A new file has been dropped into the Inbox folder.
 
-**File:** {file_path.name}
-**Received:** {timestamp}
+            **File:** {file_path.name}
+            **Received:** {timestamp}
 
-## Suggested Actions
-- [ ] Review file contents
-- [ ] Determine if action is needed
-- [ ] Move to /Done when processed
-"""
+            ## Suggested Actions
+            - [ ] Review file contents
+            - [ ] Determine if action is needed
+            - [ ] Move to /Done when processed
+            """
     action_file.write_text(content, encoding="utf-8")
     log.info("Created action file: %s", action_file.name)
 

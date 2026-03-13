@@ -1,6 +1,6 @@
 # Personal AI Employee - Hackathon 0
 
-Current Tier: **Silver (In Progress)**
+Current Tier: **Silver (Completed)**
 
 This project turns your digital life into an autonomous operation using Claude Code and a local-first memory vault.
 
@@ -9,7 +9,6 @@ This project turns your digital life into an autonomous operation using Claude C
 - **Python**: 3.11+
 - **Node.js**: 18+
 - **Claude Code**: Properly configured and logged in.
-- **Chrome/Chromium**: Required for Playwright.
 
 ## Setup Instructions
 
@@ -17,14 +16,10 @@ This project turns your digital life into an autonomous operation using Claude C
    ```bash
    pip install -r requirements.txt
    ```
-2. Install Playwright browser:
-   ```bash
-   playwright install chromium
-   ```
-3. Configure your credentials in `.env`:
+2. Configure your credentials in `.env`:
    - `GMAIL_USER`, `GMAIL_APP_PASSWORD`
    - `LINKEDIN_TOKEN`, `LINKEDIN_PERSON_ID`
-4. Start the background orchestrator:
+3. Start the background orchestrator:
    ```bash
    python orchestrator.py
    ```
