@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+"""
+Approval Watcher for Personal AI Employee.
+
+This script monitors vault/Approved/ for action files (like EMAIL_*.md)
+that have been moved there by the human. When a file appears, it
+executes the action (e.g., sends the email) and moves the file to vault/Done/.
+
+Handles:
+- EMAIL_*.md: Sends email via Gmail SMTP.
+- Expiry: If a file passes its 'expires' timestamp, it is moved to vault/Rejected/
+  with an 'EXPIRED' note.
+
+Note: LinkedIn approvals are already handled by linkedin_watcher.py.
+"""
+
+import os
+import time
+import logging
+import smtplib
+import sys
+import shutil
+from datetime import datetime
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# ── Environment ────────────────────────────────────────────────────────────────
+ROOT = Path(__file__).parent.parent.parent
+load_dotenv(ROOT / ".env")
+
+GMAIL_USER = os.getenv("GMAIL_USER", "")
+GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
+DRY_RUN = os.getenv("DRY_RUN", "true").lower() == "true"
+
+VAULT = ROOT / "vault"
+APPROVED_DIR = VAULT / "Approved"
+DONE_DIR = VAULT / "Done"
+REJECTED_DIR = VAULT / "Rejected"
+LOGS_DIR = VAULT / "Logs"
+
+# Ensure dirs exist
+for d in [APPROVED_DIR, DONE_DIR, REJECTED_DIR, LOGS_DIR]:
+    d.mkdir(exist_ok=True)
+
+# ── Logging ────────────────────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(LOGS_DIR / "approval_watcher.log"),
+        logging.StreamHandler(sys.stdout),
+    ],
+)
+log = logging.getLogger("approval_v")
+
+# ── Email Logic ────────────────────────────────────────────────────────────────
+
+
+def send_email(to, subject, body):
+    """Send email via SMTP. Identical to MCP server logic."""
+    if DRY_RUN:
+        log.info("[DRY RUN] Would send email to: %s", to)
+        return True, "[DRY RUN] Success"
+
+    if not GMAIL_USER or not GMAIL_APP_PASSWORD:
+        return False, "Gmail credentials missing in .env"
+
+    msg = MIMEMultipart()
+    msg["From"] = GMAIL_USER
+    msg["To"] = to
+    msg["Subject"] = subject
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            server.sendmail(GMAIL_USER, [to], msg.as_string())
+        return True, "Sent"
+    except Exception as e:
+        log.error("SMTP error: %s", e)
+        return False, str(e)
+
+
+# ── Processing ────────────────────────────────────────────────────────────────
+
+
+def parse_markdown_frontmatter(content):
+    """Simple parser for YAML-like frontmatter."""
+    data = {}
+    if not content.startswith("---"):
+        return data
+
+    parts = content.split("---", 2)
+    if len(parts) < 3:
+        return data
+
+    lines = parts[1].strip().split("\n")
+    for line in lines:
+        if ":" in line:
+            key, val = line.split(":", 1)
+            data[key.strip()] = val.strip()
+
+    data["_body"] = parts[2].strip()
+    return data
+
+
+def process_email_approval(file_path: Path):
+    """Parse and execute an email approval file."""
+    log.info("Processing email approval: %s", file_path.name)
+    content = file_path.read_text(encoding="utf-8")
+    data = parse_markdown_frontmatter(content)
+
+    to = data.get("to")
+    subject = data.get("subject", "No Subject")
+    body = data.get("_body", "")
+    expires = data.get("expires")
+
+    # Check expiry
+    if expires:
+        try:
+            exp_dt = datetime.fromisoformat(expires.replace("Z", "+00:00"))
+            if datetime.now().timestamp() > exp_dt.timestamp():
+                log.warning("Approval expired: %s", file_path.name)
+                # Move to rejected
+                shutil.move(
+                    str(file_path), str(REJECTED_DIR / f"EXPIRED_{file_path.name}")
+                )
+                return
+        except Exception as e:
+            log.error("Failed to parse expiry '%s': %s", expires, e)
+
+    if not to or not body:
+        log.error("Malformed email approval (missing 'to' or body): %s", file_path.name)
+        return
+
+    success, msg = send_email(to, subject, body)
+
+    if success:
+        log.info("Email action completed for %s", file_path.name)
+        # Move to Done
+        dest = DONE_DIR / file_path.name
+        if dest.exists():
+            dest = DONE_DIR / f"{file_path.stem}_{int(time.time())}.md"
+        file_path.rename(dest)
+
+        # Log to daily briefing log
+        log_entry = f"{datetime.now().isoformat()} | EXECUTED | email to {to} | {file_path.name}\n"
+        daily_log = LOGS_DIR / f"{datetime.now().strftime('%Y-%m-%d')}.md"
+        with open(daily_log, "a", encoding="utf-8") as f:
+            f.write(log_entry)
+    else:
+        log.error("Failed to execute email for %s: %s", file_path.name, msg)
+
+
+def main():
+    log.info("Approval Watcher started. Polling %s", APPROVED_DIR)
+
+    while True:
+        try:
+            # Only handle EMAIL files. LinkedIn is handled by linkedin_watcher.py
+            files = list(APPROVED_DIR.glob("EMAIL_*.md"))
+
+            for f in files:
+                process_email_approval(f)
+
+        except Exception as e:
+            log.error("Main loop error: %s", e)
+
+        time.sleep(30)  # Poll every 30 seconds
+
+
+if __name__ == "__main__":
+    main()
