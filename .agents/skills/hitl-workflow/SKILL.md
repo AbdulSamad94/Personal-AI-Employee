@@ -131,7 +131,7 @@ If an approval file exists in vault/Pending_Approval/ past its expiry:
 
 1. Move it to vault/Rejected/ with a note: "Expired — no action taken"
 2. Log the expiry
-3. Create a new task in vault/Needs*Action/ if the action is still needed:
+3. Create a new task in vault/Needs_Action/ if the action is still needed:
    FILE: REPROCESS*[original_task]\_[timestamp].md
    Content: "Previous approval expired. Human review needed to determine if this should be re-processed."
 

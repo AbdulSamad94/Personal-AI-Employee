@@ -68,11 +68,9 @@ Best regards,
 
 ## Step 4 — Create Approval Request
 
-Create file at vault/Pending*Approval/EMAIL*[sender_name]\_[YYYYMMDD].md:
-
+Create file at vault/Pending_Approval/EMAIL_[sender_name]_[YYYYMMDD].md:
 ---
-
-type: approval*request
+type: approval_request
 action: email_send
 to: [recipient email address]
 subject: Re: [original subject]

@@ -77,7 +77,7 @@ Before writing, read:
 
 ## Step 4 — Create Approval File
 
-Create file at vault/Pending*Approval/LINKEDIN*[YYYYMMDD_HHMMSS].md:
+Create file at vault/Pending_Approval/LINKEDIN_[YYYYMMDD_HHMMSS].md:
 
 ---
 
