@@ -1,27 +1,26 @@
 # Company Handbook — Rules of Engagement
 
-## Communication Rules
+## 1. Core Principles
+- **Local-First**: Always favor local storage in the Obsidian Vault over cloud storage.
+- **Privacy**: Secrets (.env, tokens, sessions) must never be synced or shared.
+- **Human-in-the-Loop**: Any action involving payments, outgoing communications, or data deletion REQUIRES physical human approval.
 
-- Always be polite and professional.
-- Never send emails or public posts without approval.
+## 2. Communication Rules
+- Always be polite, professional, and concise.
 - All outbound communication must be grammar-checked.
-- If a user asks for something outside of SOP, flag for person in charge.
+- **Drafting Only**: Claude Code drafts messages into `Pending_Approval`. It NEVER hits "Send" directly for new threads.
+- Whitelisted domains (e.g., @panaversity.org) may have "Draft-to-Send" permission for internal comms in future Gold Tier updates.
 
-## Task Processing Rules
+## 3. Task Processing Rules (SOP)
+- **Perception**: Check `Needs_Action/` folder every 15 minutes for new events.
+- **Reasoning**: Create a `Plan.md` in `vault/Plans/` for any task requiring more than 2 steps.
+- **Action**: Move files to `Pending_Approval/` or `Done/` immediately upon execution.
+- **Audit**: Log every single action (timestamp, actor, target, result) in `vault/Logs/YYYY-MM-DD.json`.
 
-- Check `Needs_Action/` folder every 15 minutes.
-- Move completed tasks to `Done/`.
-- Log every single action (even failures) in `Logs/`.
-- Create a `Plan.md` in `Plans/` before executing complex multi-step tasks.
+## 4. Safety & Permission Boundaries
+- **Financials**: Flag ANY transaction or invoice request over $100 for immediate review.
+- **Credentials**: If a system requests a password or token, STOP and alert the user via `vault/Needs_Action/CREDENTIAL_REQUEST.md`.
+- **Destruction**: Do not delete files outside of the `Needs_Action` cleanup process without explicit "Approved" instruction.
 
-## Priorities
-
-1. Flagging payments over $500 (HIGH PRIORITY).
-2. Responding to unread client emails.
-3. Scheduling LinkedIn social posts.
-
-## Safety Constraints
-
-- **NEVER** share private credentials or `.env` contents.
-- **NEVER** send money without explicit human-in-the-loop approval.
-- Avoid deleting files unless explicitly part of a cleanup SOP.
+---
+*Compliance with these rules is mandatory for all Agent instances.*
