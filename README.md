@@ -50,7 +50,7 @@ Lightweight Python background scripts (`/watchers/done/`) acting as the system's
 - **The Memory**: The Obsidian Vault (`/vault/`) acts as the state machine, config layer, and audit log. Everything the AI knows or plans is visible as local, editable text.
 
 ### 3. The Hands (MCP & HITL)
-- **Model Context Protocol (MCP)**: Standardized servers (`/mcp_servers/`) that expose external tools (like sending Gmails) safely to Claude.
+- **Model Context Protocol (MCP)**: Standardized servers (`/mcp_servers/`) that expose external tools (like sending Gmails, posting Socials, accessing Odoo) safely to Qwen.
 - **Human-In-The-Loop (HITL)**: Crucial for security. The AI writes draft actions to `/Pending_Approval`. Actions strictly wait for a human to drag the file to `/Approved` before the `approval_watcher` executes them.
 
 ---
@@ -81,10 +81,15 @@ Lightweight Python background scripts (`/watchers/done/`) acting as the system's
 │   ├── hitl-workflow/          # Logic for requesting human permissions
 │   ├── email-skill/            # Logic for drafting, triaging emails
 │   ├── linkedin-skill/         # Logic for B2B lead generation & posting
+│   ├── ceo-briefing/           # Logic for Weekly Audits
+│   ├── odoo-accounting/        # Logic for ERP connections
+│   ├── social-manager/         # Logic for Social Media PR
 │   ├── reasoning-loop/         # Deep multi-step task planning
 │   └── ...
 └── mcp_servers/                # 👐 The Hands
-    └── email/                  # Python MCP Server exposing Gmail send APIs
+    ├── email/                  # Python MCP Server for Gmail
+    ├── odoo_mcp.py             # Python MCP Server for local Odoo 19 APIs
+    └── socials_mcp.py          # Python MCP Server for FB/IG/Twitter
 ```
 
 ---
@@ -195,13 +200,13 @@ When handing control of your inbox and business to an AI, security is mission-cr
 | :-- | :--: | :-- |
 | **Bronze (Foundation)** | ✅ | Local Obsidian Vault, Dashboard, Company Handbook, basic Folder structure. |
 | **Silver (Functional)** | ✅ | 2+ Watcher scripts (Gmail, LinkedIn, File). MCP Server implementation. Reasoning loops via Agent Skills. Full working approval workflow. |
-| **Gold (Autonomous)** | ⏳ | Odoo ERP integration (Accounting MCP). End-to-end Weekly CEO Briefing (Auditing `Business_Goals.md`). Social media posting. Graceful Error Handling. |
-| **Platinum (Cloud)** | ⏸️ | Splitting the brain. Deploying a Cloud VM 24/7 for drafting, syncing to the Local Vault via Git strictly for HITL approvals. |
+| **Gold (Autonomous)** | ✅ | Odoo ERP integration (Accounting MCP). End-to-end Weekly CEO Briefing (Auditing `Business_Goals.md`). Social media posting. Graceful Error Handling. |
+| **Platinum (Cloud)** | ⏳ | Splitting the brain. Deploying a Cloud VM 24/7 for drafting, syncing to the Local Vault via Git strictly for HITL approvals. |
 
 ---
 
 ## 🔁 Autonomy & The "Ralph Wiggum" Loop
-To achieve true autonomy (Gold Tier), the agent uses a **Continuous Reasoning Loop**. This prevents the "lazy agent" problem by ensuring Claude continues working until a specific condition is met.
+To achieve true autonomy (Gold Tier), the agent uses a **Continuous Reasoning Loop**. This prevents the "lazy agent" problem by ensuring Qwen continues working until a specific condition is met.
 
 ```mermaid
 sequenceDiagram
