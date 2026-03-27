@@ -14,3 +14,5 @@ uv.lock
 skills-lock.json
 docx_content.txt
 vault/Needs_Action/
+.qwen/
+QWEN.md

@@ -32,16 +32,16 @@ if (-not $OrchestratorProcess) {
     Log-Message "orchestrator.py is already running."
 }
 
-# 2. Run Claude Code autonomously
-Log-Message "Starting Claude Code processing..."
+# 2. Run Qwen Code autonomously
+Log-Message "Starting Qwen Code processing..."
 
 try {
-    # Using 'claude' CLI. The -p flag runs a single prompt and exits.
-    $Prompt = "Process all pending tasks in vault/Needs_Action/ according to the process-tasks skill, and update the dashboard (vault/Dashboard.md). If there are no tasks, just update the dashboard. IMPORTANT: Use the skills!"
-    claude -p $Prompt | Out-File -FilePath "$LogsDir\claude_run_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
-    Log-Message "Claude Code execution finished."
+    # Using 'qwen' CLI. The positional argument runs a single prompt and exits.
+    $Prompt = "Process all pending tasks in vault/Needs_Action/ according to the process-tasks skill, and update the dashboard (vault/Dashboard.md). If there are no tasks, just update the dashboard. IMPORTANT: Use the skills! IMPORTANT TOOL NOTE: Do NOT try to use tools named 'write_file' or 'run_shell_command'. Only use the exact tool names available in your registry (such as 'todo_write' or whatever is listed for file editing)."
+    qwen $Prompt | Out-File -FilePath "$LogsDir\qwen_run_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+    Log-Message "Qwen Code execution finished."
 } catch {
-    Log-Message "Error running Claude Command: $_"
+    Log-Message "Error running Qwen Command: $_"
 }
 
 Log-Message "=== Task Scheduler Run Completed ==="

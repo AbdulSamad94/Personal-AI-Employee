@@ -27,7 +27,7 @@ try {
     }
 
     # Register the task
-    Register-ScheduledTask -Action $Action -Trigger $Trigger -Settings $Settings -TaskName $TaskName -Description "Runs the Personal AI Employee agent (Claude) every 30 minutes to process Needs_Action tasks" -User $env:USERNAME | Out-Null
+    Register-ScheduledTask -Action $Action -Trigger $Trigger -Settings $Settings -TaskName $TaskName -Description "Runs the Personal AI Employee agent (Qwen) every 30 minutes to process Needs_Action tasks" -User $env:USERNAME | Out-Null
     
     Write-Host "SUCCESS: Scheduled task '$TaskName' registered."
     Write-Host "The agent will now run automatically in the background every 30 minutes."

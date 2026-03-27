@@ -5,12 +5,12 @@
 
 ![Digital FTE](https://img.shields.io/badge/Status-Silver_Tier_Completed-silver.svg)
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)
-![Claude Code](https://img.shields.io/badge/AI-Claude_Code-purple.svg)
+![Qwen Code](https://img.shields.io/badge/AI-Qwen_Code-orange.svg)
 
 ## 📖 Executive Summary
 Welcome to the future of personal automation. This project shifts the conversation from "software licenses" to "headcount budgets" by acting as a **Digital Full-Time Equivalent (FTE)**. It is a local-first, privacy-focused autonomous system that proactively manages your personal affairs (email management, local file sorting) and business operations (social media presence, approval workflows) 24/7.
 
-Unlike traditional chatbots, this AI doesn't wait for you to type. It uses a **Perception → Reasoning → Action** architecture to continuously watch for events, plan solutions using Claude Code's advanced reasoning capabilities, and execute actions via external integrations.
+Unlike traditional chatbots, this AI doesn't wait for you to type. It uses a **Perception → Reasoning → Action** architecture to continuously watch for events, plan solutions using Qwen Code's advanced reasoning capabilities, and execute actions via external integrations.
 
 ---
 
@@ -27,14 +27,14 @@ graph TD
     end
 
     subgraph "Reasoning (The Brain & Memory)"
-        Inbox --> |Read Trigger| Claude[Claude Code Engine]
-        Claude <--> |Uses Skills| Skills[Agent Skills]
-        Claude <--> |Checks Rules| CH[Company_Handbook.md]
-        Claude <--> |Checks Goals| BG[Business_Goals.md]
+        Inbox --> |Read Trigger| Qwen[Qwen Code Engine]
+        Qwen <--> |Uses Skills| Skills[Agent Skills]
+        Qwen <--> |Checks Rules| CH[Company_Handbook.md]
+        Qwen <--> |Checks Goals| BG[Business_Goals.md]
     end
 
     subgraph "Action (MCP Servers & HITL)"
-        Claude --> |Drafts Action| PA[(Vault / Pending_Approval)]
+        Qwen --> |Drafts Action| PA[(Vault / Pending_Approval)]
         PA --> |Human Reviews & Moves| APP[(Vault / Approved)]
         APP --> |Triggers| AW[Approval Watcher]
         AW --> |Executes via| MCP[MCP Servers]
@@ -46,7 +46,7 @@ graph TD
 Lightweight Python background scripts (`/watchers/done/`) acting as the system's eyes and ears. Managed by `orchestrator.py`, they scan APIs and filesystems, transforming external events into Markdown files dropped into the Obsidian Vault.
 
 ### 2. The Brain & Memory
-- **The Brain**: Claude Code runs in a continuous loop. Woken by new files in `Needs_Action`, it leverages custom **Agent Skills** (`.agents/skills/`) to break down complex tasks and draft solutions.
+- **The Brain**: Qwen Code runs in a continuous loop. Woken by new files in `Needs_Action`, it leverages custom **Agent Skills** (`.agents/skills/`) to break down complex tasks and draft solutions.
 - **The Memory**: The Obsidian Vault (`/vault/`) acts as the state machine, config layer, and audit log. Everything the AI knows or plans is visible as local, editable text.
 
 ### 3. The Hands (MCP & HITL)
@@ -63,8 +63,8 @@ Lightweight Python background scripts (`/watchers/done/`) acting as the system's
 ├── orchestrator.py             # Main entry point: Runs all background watchers continuously
 ├── vault/                      # 🧠 The Obsidian Vault (System State & Memory)
 │   ├── Inbox/                  # Raw drops
-│   ├── Needs_Action/           # Tasks awaiting Claude's attention
-│   ├── Pending_Approval/       # Claude's drafted tasks awaiting human approval
+│   ├── Needs_Action/           # Tasks awaiting Qwen's attention
+│   ├── Pending_Approval/       # Qwen's drafted tasks awaiting human approval
 │   ├── Approved/               # Human-approved tasks waiting for execution watcher
 │   ├── Done/ & Logs/           # History of completed actions
 │   ├── Company_Handbook.md     # Rules of behavior for the AI
@@ -77,7 +77,7 @@ Lightweight Python background scripts (`/watchers/done/`) acting as the system's
 │   │   ├── filesystem_watcher.py  # Event-driven local file ingester
 │   │   └── approval_watcher.py # Executes tasks dropped in /Approved
 │   └── todo/                   # Stubs for upcoming (Gold tier) features
-├── .agents/skills/             # 🛠️ Claude's Reasoning capabilities
+├── .agents/skills/             # 🛠️ Qwen's Reasoning capabilities
 │   ├── hitl-workflow/          # Logic for requesting human permissions
 │   ├── email-skill/            # Logic for drafting, triaging emails
 │   ├── linkedin-skill/         # Logic for B2B lead generation & posting
@@ -95,7 +95,7 @@ Estimated setup time: 10-15 minutes.
 
 ### Prerequisites
 1. **Python 3.11+**
-2. **Claude Code** installed and authenticated (`npm install -g @anthropic/claude-code`)
+2. **Qwen Code** installed and authenticated (`npm install -g qwen`)
 3. **Obsidian** (Optional but highly recommended for viewing the `/vault` dashboard)
 
 ### Step-by-Step
@@ -128,10 +128,10 @@ Estimated setup time: 10-15 minutes.
     python orchestrator.py
     ```
 
-4. **Boot up the Employee (Claude Code)**
-    Open a *second* terminal to wake the brain up. Instruct Claude to clear the inbox.
+4. **Boot up the Employee (Qwen Code)**
+    Open a *second* terminal to wake the brain up. Instruct Qwen to clear the inbox.
     ```bash
-    claude
+    qwen
     > "Trigger the process-tasks skill to empty the Needs_Action folder."
     ```
 
@@ -147,15 +147,15 @@ sequenceDiagram
     participant Web as Gmail servers
     participant GW as gmail_watcher.py
     participant V as Vault (Obsidian)
-    participant C as Claude Code
+    participant Q as Qwen Code
     participant AW as approval_watcher.py
     participant MCP as MCP Email Server
     
     Web->>GW: New urgent client email arrives
     GW->>V: Creates EMAIL_101.md in /Needs_Action
-    C->>V: Detects EMAIL_101.md
-    C->>C: Uses email-skill & hitl-workflow to plan reply
-    C->>V: Drafts response & moves to /Pending_Approval
+    Q->>V: Detects EMAIL_101.md
+    Q->>Q: Uses email-skill & hitl-workflow to plan reply
+    Q->>V: Drafts response & moves to /Pending_Approval
     Note over V: Waiting for local human review...
     Human->>V: Drags via Obsidian into /Approved
     AW->>V: Detects approved file
@@ -169,14 +169,14 @@ sequenceDiagram
 sequenceDiagram
     participant LW as linkedin_watcher.py
     participant V as Vault (Obsidian)
-    participant C as Claude Code
+    participant Q as Qwen Code
     
     LW->>V: Scrapes daily metrics & new connections
     LW->>V: Logs to /Needs_Action/LINKEDIN_Event.md
-    C->>V: Analyzes connection profiles
-    C->>C: Compares against Business_Goals.md
-    C->>V: Drafts personalized welcome DMs or Lead scores
-    C->>V: Places recommendations in /Pending_Approval
+    Q->>V: Analyzes connection profiles
+    Q->>Q: Compares against Business_Goals.md
+    Q->>V: Drafts personalized welcome DMs or Lead scores
+    Q->>V: Places recommendations in /Pending_Approval
 ```
 
 ---
@@ -206,19 +206,19 @@ To achieve true autonomy (Gold Tier), the agent uses a **Continuous Reasoning Lo
 ```mermaid
 sequenceDiagram
     participant O as Orchestrator
-    participant C as Claude Code
+    participant Q as Qwen Code
     participant V as Vault (Obsidian)
     
     O->>V: Detects new file in /Needs_Action
-    O->>C: Bootstraps Claude with "Process Inbox" goal
+    O->>Q: Bootstraps Qwen with "Process Inbox" goal
     loop Ralph Wiggum Autonomy
-        C->>V: Reads Tasks & Plans
-        C->>V: Executes step (e.g., Drafts email)
-        C->>C: Checks completion criteria
+        Q->>V: Reads Tasks & Plans
+        Q->>V: Executes step (e.g., Drafts email)
+        Q->>Q: Checks completion criteria
         alt Task Not Found in /Done
-            C->>C: Self-corrects & Loops
+            Q->>Q: Self-corrects & Loops
         else Task Moved to /Done
-            C->>O: Emits <promise>TASK_COMPLETE</promise>
+            Q->>O: Emits <promise>TASK_COMPLETE</promise>
         end
     end
     O->>O: Graceful Shutdown or Sleeps
@@ -243,7 +243,7 @@ The AI Employee is designed for graceful degradation.
 
 1. **Transient Errors (API Timeouts)**: Implemented using **Exponential Backoff**. 
    - *Attempt 1*: 1s delay | *Attempt 2*: 4s delay | *Attempt 3*: 16s delay.
-2. **Logic Errors (Misinterpretation)**: If Claude fails a task 3 times, it automatically quarentines the task and creates an `ALERT_HUMAN.md` file in the `/Needs_Action` folder.
+2. **Logic Errors (Misinterpretation)**: If Qwen fails a task 3 times, it automatically quarentines the task and creates an `ALERT_HUMAN.md` file in the `/Needs_Action` folder.
 3. **System Crashes**: The `orchestrator.py` acts as a **Watchdog Process**, monitoring the PIDs of all watchers and auto-restarting them if they exit with a non-zero code.
 
 ---
