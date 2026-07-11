@@ -64,9 +64,10 @@ def main():
     try:
         while True:
             for name, (script, env, proc) in list(watchers.items()):
-                if proc.poll() is not None:
+                if proc is None or proc.poll() is not None:
+                    exit_code = proc.returncode if proc is not None else "failed to start"
                     logging.warning(
-                        f"Watcher {name} crashed (Exit code: {proc.returncode}). Restarting..."
+                        f"Watcher {name} is not running (Exit code: {exit_code}). Restarting..."
                     )
                     watchers[name] = (script, env, start_watcher(script, env))
             time.sleep(10)

@@ -234,6 +234,15 @@ def scan_pending(state: dict):
 
 
 def poll_updates(state: dict):
+    # On a fresh state (update_offset still 0 — no telegram_state.json yet, or it was
+    # cleared), skip straight to the latest update instead of pulling up to 24h of
+    # backlog. Callback/message handlers already no-op safely on unknown short_ids/
+    # chat_ids, so this isn't a correctness fix, just avoids wasted API calls on first run.
+    if state["update_offset"] == 0:
+        init_result = tg_call("getUpdates", offset=-1, limit=1)
+        if init_result and init_result.get("ok") and init_result["result"]:
+            state["update_offset"] = init_result["result"][0]["update_id"]
+
     result = tg_call(
         "getUpdates",
         offset=state["update_offset"] + 1,

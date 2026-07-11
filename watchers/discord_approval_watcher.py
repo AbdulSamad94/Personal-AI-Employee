@@ -201,8 +201,13 @@ def _build_bot():
     async def scan_pending():
         channel = client.get_channel(int(CHANNEL_ID))
         if channel is None:
-            log.error("Discord channel %s not found — is the bot in that server?", CHANNEL_ID)
-            return
+            # get_channel only checks the local cache; fall back to an API fetch
+            # (per discord.py's own guidance) in case the cache hasn't warmed up yet.
+            try:
+                channel = await client.fetch_channel(int(CHANNEL_ID))
+            except Exception as e:
+                log.error("Discord channel %s not found or inaccessible: %s", CHANNEL_ID, e)
+                return
         already_notified = {v["file"] for v in state["notified"].values()}
         for f in sorted(PENDING_DIR.glob("*.md")):
             if f.name in already_notified:
