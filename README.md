@@ -6,6 +6,34 @@
 ![OpenCode](https://img.shields.io/badge/AI-OpenCode-orange.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
+## Quick start
+
+```bash
+git clone https://github.com/AbdulSamad94/Personal-AI-Employee.git
+cd Personal-AI-Employee
+uv sync
+cp .env.example .env   # fill in your credentials — see Setup & Installation below
+python orchestrator.py # boots the watchers
+opencode run "Process all pending tasks in vault/Needs_Action/" --auto
+```
+
+That's the whole loop in one shot. Full setup (Gmail OAuth, Telegram/Discord approval bots, etc.) is in [Setup & Installation](#setup--installation).
+
+## Table of Contents
+
+- [What this is](#what-this-is)
+- [Core Architecture](#core-architecture)
+- [Project Status](#project-status)
+- [Codebase & Vault Structure](#codebase--vault-structure)
+- [Setup & Installation](#setup--installation)
+- [Application Workflows](#application-workflows)
+- [Security & Privacy Posture](#security--privacy-posture)
+- [Permission Policy](#permission-policy)
+- [The "Ralph Wiggum" Retry Loop](#the-ralph-wiggum-retry-loop)
+- [Error Handling — current vs. planned](#error-handling--current-vs-planned)
+- [Troubleshooting / FAQ](#troubleshooting--faq)
+- [Contributing](#contributing)
+
 ## What this is
 
 Most "AI agent" products are a black box: you give a SaaS tool your credentials and hope it does the right thing. This project takes the opposite approach — every piece of state the agent knows or plans is a plain Markdown file you can read, edit, or delete yourself, and nothing irreversible (sending an email, posting socially, moving money) happens without you physically approving the draft first.
@@ -130,19 +158,10 @@ Being upfront about what actually works vs. what's scaffolding, so you don't wir
     ```
 
 2. **Configure environment variables**
-    Create a `.env` file at the root (already gitignored):
-    ```env
-    # Gmail watcher & MCP
-    GMAIL_USER=your_email@gmail.com
-    GMAIL_APP_PASSWORD=your_16_digit_app_password
-
-    # LinkedIn watcher integration
-    LINKEDIN_TOKEN=your_oauth2_token
-    LINKEDIN_PERSON_ID=your_id
-
-    # Master safety switch — keep true until you've reviewed what the agent does
-    DRY_RUN=true
+    ```bash
+    cp .env.example .env
     ```
+    Then fill in the values you need — `.env.example` documents every variable, including which are optional (second Gmail account, Telegram/Discord bots, Odoo). At minimum you need `GMAIL_USER`/`GMAIL_APP_PASSWORD` to get started; leave `DRY_RUN=true` until you've reviewed what the agent does.
 
 3. **Initialize the orchestrator**
     Boots all background watchers. Leave it running in a terminal.
@@ -255,6 +274,25 @@ sequenceDiagram
 **What's actually implemented today**: `orchestrator.py` acts as a watchdog process, monitoring the PIDs of all watchers and auto-restarting any that exit with a non-zero code. Watchers catch and log exceptions broadly to stay alive across transient failures.
 
 **Not yet implemented** (roadmap, not current behavior): exponential backoff on retried API calls, and automatic quarantine of a task into an `ALERT_HUMAN.md` file after repeated failures. If you build these, they'd slot naturally into the watcher poll loops and `approval_watcher.py`.
+
+---
+
+## Troubleshooting / FAQ
+
+**Gmail OAuth fails with "Access blocked: has not completed the Google verification process" / Error 403.**
+Your Google Cloud OAuth app is in "Testing" mode, which only allows explicitly allow-listed accounts to log in. Go to [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → OAuth consent screen → Test users → add the Gmail address you're trying to authorize, then retry.
+
+**Telegram bot never sends notifications, even though the token/chat ID are correct.**
+Telegram is intermittently blocked at the network/ISP level in some regions (Pakistan's PTA, for one). Check with `curl -sS -o /dev/null -w "%{http_code}\n" https://api.telegram.org` — if it hangs or times out, that's the cause, not a bug. The watcher degrades gracefully (retries automatically, doesn't crash) — if you need a channel that works right now, set up the Discord bot as a redundant path (both are supported side by side; see `CONTRIBUTING.md`).
+
+**Discord bot connects but "Request Changes" text replies don't get picked up.**
+The bot needs the **Message Content Intent** enabled in the [Discord Developer Portal](https://discord.com/developers/applications) (Bot tab) — Discord doesn't let a bot read message content by default. Buttons (Approve/Reject) still work without it; only free-text replies need it.
+
+**Scheduled task runs on Windows but nothing seems to happen.**
+Check `vault/Logs/scheduler.log` first — it logs every run's outcome. If you see `%1 is not a valid Win32 application`, that's a known Windows quirk with how `opencode` resolves (fixed as of this repo's current `run_agent.ps1`, but worth checking if you've forked/modified it).
+
+**I get duplicate task files / the same event processed twice.**
+Almost always means two orchestrator processes are running at once (e.g. from overlapping scheduled runs). Check with `Get-CimInstance Win32_Process -Filter "name='python.exe'" | Where-Object { $_.CommandLine -match 'orchestrator.py' }` — you should see exactly one. `run_agent.ps1` uses a named Mutex to prevent this, but if you're invoking `orchestrator.py` manually alongside the scheduled task, you can still hit it.
 
 ---
 
