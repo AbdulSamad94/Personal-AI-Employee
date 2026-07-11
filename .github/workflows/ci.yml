@@ -1,0 +1,44 @@
+name: CI
+
+"on":
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Add uv to PATH
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Syntax check (every .py file in the repo)
+        run: uv run python -m compileall -q watchers orchestrator.py mcp_servers tests
+
+      - name: Lint (ruff)
+        # Scoped to tests/ plus the actively-maintained files touched in the dual-approval-bots
+        # work. The rest of the codebase has pre-existing lint debt (see CONTRIBUTING.md's
+        # good-first-contributions) — expand this list as those files get cleaned up, working
+        # toward eventually running `ruff check .` unscoped.
+        run: >
+          uv run ruff check
+          tests/
+          orchestrator.py
+          mcp_servers/email/server.py
+          watchers/discord_approval_watcher.py
+          watchers/telegram_approval_watcher.py
+
+      - name: Run tests
+        run: uv run pytest tests/ -v

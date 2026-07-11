@@ -9,7 +9,6 @@ vault/Logs/
 vault/whatsapp_session/
 *.egg-info/
 .venv/
-uv.lock
 .python-version
 skills-lock.json
 docx_content.txt
