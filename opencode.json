@@ -1,0 +1,27 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/big-pickle",
+  "small_model": "opencode/deepseek-v4-flash-free",
+  "autoupdate": true,
+  "mcp": {
+    "email": {
+      "type": "local",
+      "command": ["uv", "run", "mcp_servers/email/server.py"],
+      "enabled": true,
+      "environment": {
+        "GMAIL_USER": "{env:GMAIL_USER}",
+        "GMAIL_APP_PASSWORD": "{env:GMAIL_APP_PASSWORD}",
+        "DRY_RUN": "{env:DRY_RUN}"
+      }
+    }
+  },
+  "permission": {
+    "edit": "allow",
+    "bash": {
+      "*": "allow",
+      "rm -rf *": "deny",
+      "git push*": "ask",
+      "git reset --hard*": "ask"
+    }
+  }
+}

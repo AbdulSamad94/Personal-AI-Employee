@@ -1,0 +1,23 @@
+# OpenCode's Glob/Grep tools are ripgrep-backed and respect .gitignore by default
+# (see https://github.com/anomalyco/opencode/issues/31994 - no config toggle exists yet).
+# These vault/ subdirectories are intentionally gitignored (transient/high-churn runtime
+# state, or real personal data we don't want in git history), but the agent still needs
+# to see them at runtime to do its job. Re-include them here without changing what git
+# actually tracks. If you gitignore another vault/ path the agent needs to read, add it
+# here too, or the agent will silently see it as empty.
+!vault/Needs_Action/
+!vault/Needs_Action/**
+!vault/Logs/
+!vault/Logs/**
+!vault/Pending_Approval/
+!vault/Pending_Approval/**
+!vault/Approved/
+!vault/Approved/**
+!vault/Done/
+!vault/Done/**
+!vault/Rejected/
+!vault/Rejected/**
+!vault/Briefings/
+!vault/Briefings/**
+!vault/Plans/
+!vault/Plans/**

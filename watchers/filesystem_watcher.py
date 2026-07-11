@@ -17,7 +17,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
 # ── Environment ────────────────────────────────────────────────────────────────
-VAULT_PATH = Path(__file__).parent.parent.parent / "vault"
+VAULT_PATH = Path(__file__).parent.parent / "vault"
 INBOX = VAULT_PATH / "Inbox"
 NEEDS_ACTION = VAULT_PATH / "Needs_Action"
 LOGS = VAULT_PATH / "Logs"

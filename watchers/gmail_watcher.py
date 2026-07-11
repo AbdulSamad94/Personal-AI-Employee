@@ -9,8 +9,17 @@ from googleapiclient.discovery import build
 
 load_dotenv()
 
+# Which Gmail account this instance watches. "default" keeps the original
+# token.json/processed_emails.txt filenames so the existing personal-account
+# setup isn't disrupted; any other label gets its own token_<label>.json,
+# processed_emails_<label>.txt, and gmail_watcher_<label>.log, so multiple
+# accounts can run as separate orchestrator-managed processes without
+# clobbering each other's state. Set via orchestrator.py's watcher_configs.
+ACCOUNT_LABEL = os.environ.get("GMAIL_ACCOUNT_LABEL", "default")
+SUFFIX = "" if ACCOUNT_LABEL == "default" else f"_{ACCOUNT_LABEL}"
+
 SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
-VAULT = Path(__file__).parent.parent.parent / "vault"
+VAULT = Path(__file__).parent.parent / "vault"
 NEEDS_ACTION = VAULT / "Needs_Action"
 LOGS = VAULT / "Logs"
 
@@ -20,13 +29,16 @@ NEEDS_ACTION.mkdir(exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(message)s",
-    handlers=[logging.FileHandler(LOGS / "gmail_watcher.log"), logging.StreamHandler()],
+    handlers=[
+        logging.FileHandler(LOGS / f"gmail_watcher{SUFFIX}.log"),
+        logging.StreamHandler(),
+    ],
 )
 
 
 def get_service():
     creds = None
-    token = VAULT.parent / "token.json"
+    token = VAULT.parent / f"token{SUFFIX}.json"
     creds_file = VAULT.parent / "credentials.json"
 
     if token.exists():
@@ -48,11 +60,12 @@ def make_action_file(service, msg_id):
     headers = {h["name"]: h["value"] for h in msg["payload"]["headers"]}
     snippet = msg.get("snippet", "")
     ts = datetime.now()
-    out = NEEDS_ACTION / f'EMAIL_{msg_id[:10]}_{ts.strftime("%Y%m%d_%H%M%S")}.md'
+    out = NEEDS_ACTION / f'EMAIL_{ACCOUNT_LABEL}_{msg_id[:10]}_{ts.strftime("%Y%m%d_%H%M%S")}.md'
 
     out.write_text(
         f"""---
         type: email
+        account: {ACCOUNT_LABEL}
         from: {headers.get('From', 'Unknown')}
         subject: {headers.get('Subject', 'No Subject')}
         received: {ts.isoformat()}
@@ -76,11 +89,11 @@ def run():
     processed = set()
 
     # Load already processed IDs from file so restarts don't reprocess
-    processed_file = VAULT / "Logs" / "processed_emails.txt"
+    processed_file = VAULT / "Logs" / f"processed_emails{SUFFIX}.txt"
     if processed_file.exists():
         processed = set(processed_file.read_text().splitlines())
 
-    logging.info("Gmail Watcher running... checking every 2 minutes")
+    logging.info(f"Gmail Watcher ({ACCOUNT_LABEL}) running... checking every 2 minutes")
 
     while True:
         try:

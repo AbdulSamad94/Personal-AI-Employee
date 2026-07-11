@@ -28,12 +28,26 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # ── Environment ────────────────────────────────────────────────────────────────
-ROOT = Path(__file__).parent.parent.parent
+ROOT = Path(__file__).parent.parent
 load_dotenv(ROOT / ".env")
 
-GMAIL_USER = os.getenv("GMAIL_USER", "")
-GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
 DRY_RUN = os.getenv("DRY_RUN", "true").lower() == "true"
+
+# Mirrors mcp_servers/email/server.py's ACCOUNTS setup — "work" only exists if
+# GMAIL_USER_WORK is configured. Keeps drag-and-drop / Telegram-approved sends
+# consistent with agent-drafted sends: a reply to a work-inbox email goes out
+# from the work address, not the personal one.
+ACCOUNTS = {
+    "default": {
+        "user": os.getenv("GMAIL_USER", ""),
+        "app_password": os.getenv("GMAIL_APP_PASSWORD", ""),
+    },
+}
+if os.getenv("GMAIL_USER_WORK"):
+    ACCOUNTS["work"] = {
+        "user": os.getenv("GMAIL_USER_WORK", ""),
+        "app_password": os.getenv("GMAIL_APP_PASSWORD_WORK", ""),
+    }
 
 VAULT = ROOT / "vault"
 APPROVED_DIR = VAULT / "Approved"
@@ -59,25 +73,29 @@ log = logging.getLogger("approval_v")
 # ── Email Logic ────────────────────────────────────────────────────────────────
 
 
-def send_email(to, subject, body):
-    """Send email via SMTP. Identical to MCP server logic."""
+def send_email(to, subject, body, from_account="default"):
+    """Send email via SMTP using the credentials for from_account."""
+    creds = ACCOUNTS.get(from_account, ACCOUNTS["default"])
+    gmail_user = creds["user"]
+    gmail_app_password = creds["app_password"]
+
     if DRY_RUN:
-        log.info("[DRY RUN] Would send email to: %s", to)
+        log.info("[DRY RUN] Would send email from_account=%s to=%s", from_account, to)
         return True, "[DRY RUN] Success"
 
-    if not GMAIL_USER or not GMAIL_APP_PASSWORD:
-        return False, "Gmail credentials missing in .env"
+    if not gmail_user or not gmail_app_password:
+        return False, f"Gmail credentials missing in .env for account '{from_account}'"
 
     msg = MIMEMultipart()
-    msg["From"] = GMAIL_USER
+    msg["From"] = gmail_user
     msg["To"] = to
     msg["Subject"] = subject
     msg.attach(MIMEText(body, "plain"))
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
-            server.sendmail(GMAIL_USER, [to], msg.as_string())
+            server.login(gmail_user, gmail_app_password)
+            server.sendmail(gmail_user, [to], msg.as_string())
         return True, "Sent"
     except Exception as e:
         log.error("SMTP error: %s", e)
@@ -118,6 +136,7 @@ def process_email_approval(file_path: Path):
     subject = data.get("subject")
     full_body = data.get("_body", "")
     expires = data.get("expires")
+    from_account = data.get("from_account", "default")
 
     # Check expiry
     if expires:
@@ -159,7 +178,7 @@ def process_email_approval(file_path: Path):
         log.error("Malformed email approval (missing 'to' or body): %s", file_path.name)
         return
 
-    success, msg = send_email(to, subject or "Automated Response", final_body)
+    success, msg = send_email(to, subject or "Automated Response", final_body, from_account)
 
     if success:
         log.info("Email action completed for %s", file_path.name)

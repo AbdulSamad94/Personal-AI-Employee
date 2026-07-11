@@ -23,6 +23,11 @@ Extract:
 - Email content/summary
 - Any specific requests or questions asked
 - Tone of the original email (formal/informal/urgent)
+- The `account:` frontmatter field (e.g. `default` for the personal inbox, `work`
+  for the job-related inbox) — this determines which address the reply must be
+  sent from. A reply to a `work`-account email (recruiters, job applications,
+  professional contacts) must go out from the work address, never the personal
+  one, or it will look wrong to the recipient.
 
 ## Step 2 — Read Communication Rules
 
@@ -75,6 +80,7 @@ action: email_send
 to: [recipient email address]
 subject: Re: [original subject]
 task_source: [original EMAIL*\*.md filename]
+from_account: [the `account:` value from the source EMAIL\_\*.md — 'default' or 'work']
 created: [ISO timestamp]
 expires: [ISO timestamp + 24 hours]
 status: pending
@@ -100,7 +106,10 @@ status: pending
 
 ## To Approve
 
-Move this file to vault/Approved/ folder.
+You'll get a Telegram notification with Approve/Reject/Request Changes buttons
+(via telegram_approval_watcher.py) once this file is written — tapping Approve
+moves it to vault/Approved/ automatically. You can also move it there manually
+in Obsidian if you prefer.
 
 ## To Reject or Edit
 

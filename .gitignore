@@ -1,5 +1,5 @@
 .env
-token.json
+token*.json
 credentials.json
 whatsapp_session/
 __pycache__/
@@ -13,6 +13,24 @@ uv.lock
 .python-version
 skills-lock.json
 docx_content.txt
+.orchestrator.pid
+
+# Claude Code convention: settings.json is shared/team config (tracked),
+# settings.local.json is per-developer permission approvals (not shared —
+# each contributor accumulates their own as they use tools).
+.claude/settings.local.json
+
+# Runtime vault directories fill up with real personal data (email content,
+# client/invoice details, business metrics) as the system actually runs.
+# Keep them out of git the same way Needs_Action/ and Logs/ already are —
+# .rgignore re-includes what OpenCode's tools need to see without changing
+# what git tracks. Only structural files (Company_Handbook.md, Business_Goals.md,
+# Dashboard.md, .obsidian/ config) stay tracked as the actual project template.
 vault/Needs_Action/
-.qwen/
-QWEN.md
+vault/Pending_Approval/
+vault/Approved/
+vault/Done/
+vault/Rejected/
+vault/Briefings/
+vault/Plans/
+vault/.obsidian/workspace.json

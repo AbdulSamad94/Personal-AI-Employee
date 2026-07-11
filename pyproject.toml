@@ -1,10 +1,12 @@
 [project]
-name = "hackhaton-0"
+name = "personal-ai-employee"
 version = "0.1.0"
-description = "Personal AI Employee - Hackathon 0"
+description = "Local-first, human-in-the-loop autonomous agent that triages email, manages LinkedIn, and drafts business actions for human approval."
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
+    "discord-py>=2.4.0",
     "google-api-python-client>=2.191.0",
     "google-auth>=2.48.0",
     "google-auth-httplib2>=0.3.0",

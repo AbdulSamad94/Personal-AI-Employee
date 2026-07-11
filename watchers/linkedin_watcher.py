@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 import sys
 
 # Load .env from project root
-ROOT = Path(__file__).parent.parent.parent
+ROOT = Path(__file__).parent.parent
 load_dotenv(ROOT / ".env")
 
 VAULT = ROOT / "vault"

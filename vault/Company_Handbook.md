@@ -8,8 +8,8 @@
 ## 2. Communication Rules
 - Always be polite, professional, and concise.
 - All outbound communication must be grammar-checked.
-- **Drafting Only**: Claude Code drafts messages into `Pending_Approval`. It NEVER hits "Send" directly for new threads.
-- Whitelisted domains (e.g., @panaversity.org) may have "Draft-to-Send" permission for internal comms in future Gold Tier updates.
+- **Drafting Only**: The agent drafts messages into `Pending_Approval`. It NEVER hits "Send" directly for new threads.
+- Whitelisted domains (e.g., @panaversity.org) may have "Draft-to-Send" permission for internal comms in a future update.
 
 ## 3. Task Processing Rules (SOP)
 - **Perception**: Check `Needs_Action/` folder every 15 minutes for new events.
