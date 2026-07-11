@@ -41,7 +41,9 @@ def mock_tg_call(monkeypatch):
 
     def fake_tg_call(method, **params):
         calls.append({"method": method, **params})
-        return {"ok": True, "result": {}}
+        # Mirrors the real sendMessage response shape — send_notification() reads
+        # result["result"]["message_id"], which would KeyError on an empty dict here.
+        return {"ok": True, "result": {"message_id": 12345}}
 
     monkeypatch.setattr(taw, "tg_call", fake_tg_call)
     return calls
