@@ -17,7 +17,9 @@ $Action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-NoProfil
 $Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 30)
 
 # Create settings
-$Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RunOnlyIfNetworkAvailable
+# -WakeToRun pulls the machine out of sleep (not a full shutdown) to run each 30-minute
+# check, so short lid-closes/naps don't create gaps in email/approval monitoring.
+$Settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -RunOnlyIfNetworkAvailable -WakeToRun
 
 try {
     # If it already exists, remove it first
@@ -27,7 +29,7 @@ try {
     }
 
     # Register the task
-    Register-ScheduledTask -Action $Action -Trigger $Trigger -Settings $Settings -TaskName $TaskName -Description "Runs the Personal AI Employee agent (Qwen) every 30 minutes to process Needs_Action tasks" -User $env:USERNAME | Out-Null
+    Register-ScheduledTask -Action $Action -Trigger $Trigger -Settings $Settings -TaskName $TaskName -Description "Runs the Personal AI Employee agent (OpenCode) every 30 minutes to process Needs_Action tasks" -User $env:USERNAME | Out-Null
     
     Write-Host "SUCCESS: Scheduled task '$TaskName' registered."
     Write-Host "The agent will now run automatically in the background every 30 minutes."

@@ -1,6 +1,6 @@
 # scripts/ralph_loop.ps1
-# Ralph Wiggum Loop for Qwen
-# Keeps Qwen working on a task until it's finished.
+# Ralph Wiggum Loop for OpenCode CLI
+# Keeps OpenCode working on a task until it's finished.
 
 param (
     [Parameter(Mandatory=$true)]
@@ -36,24 +36,21 @@ while (($iteration -le $MaxIterations) -and (-not $completed)) {
         break
     }
     
-    # Inject the prompt to Qwen
-    # In a real environment, you might pipe this or use qwen --prompt
-    # Because this is a continuous interactive agent, we ask it to read Needs_Action
+    # Inject the prompt to OpenCode
     $Prompt = "Please read the task $TaskName in vault/Needs_Action. Execute the instructions. When fully complete, move the file to vault/Done and say TASK_COMPLETE."
-    
-    Write-Host "Invoking Qwen with prompt..."
-    # Placeholder for actual qwen invocation:
-    # qwen $Prompt
-    # For demonstration:
-    qwen -p $Prompt
-    
+
+    Write-Host "Invoking OpenCode CLI..."
+
+    # Run OpenCode non-interactively; --auto approves permissions not explicitly denied in opencode.json
+    opencode run $Prompt --auto
+
     # Re-evaluate
     if (Test-Path $DoneTaskFile) {
         Write-Host "Task complete! Found file in /Done."
         $completed = $true
         break
     } else {
-        Write-Host "Qwen exited but task file is not in /Done. Looping again..."
+        Write-Host "OpenCode exited but task file is not in /Done. Looping again..."
     }
     
     $iteration++

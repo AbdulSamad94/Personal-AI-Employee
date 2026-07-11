@@ -34,10 +34,24 @@ from mcp.server.fastmcp import FastMCP
 ROOT = Path(__file__).parent.parent.parent
 load_dotenv(ROOT / ".env")
 
-GMAIL_USER: str = os.getenv("GMAIL_USER", "")
-GMAIL_APP_PASSWORD: str = os.getenv("GMAIL_APP_PASSWORD", "")
 DRY_RUN: bool = os.getenv("DRY_RUN", "true").lower() == "true"
 VAULT = ROOT / "vault"
+
+# Multiple Gmail accounts can be sent from: "default" (personal) is required,
+# "work" is optional. Matches the account labels gmail_watcher.py tags incoming
+# mail with (see the `account:` frontmatter field), so a reply to a work-inbox
+# email can go out from the work address instead of the personal one.
+ACCOUNTS: dict[str, dict[str, str]] = {
+    "default": {
+        "user": os.getenv("GMAIL_USER", ""),
+        "app_password": os.getenv("GMAIL_APP_PASSWORD", ""),
+    },
+}
+if os.getenv("GMAIL_USER_WORK"):
+    ACCOUNTS["work"] = {
+        "user": os.getenv("GMAIL_USER_WORK", ""),
+        "app_password": os.getenv("GMAIL_APP_PASSWORD_WORK", ""),
+    }
 
 # ── Logging — stderr only (stdout is reserved for MCP protocol) ────────────────
 logging.basicConfig(
@@ -84,6 +98,15 @@ class SendEmailInput(BaseModel):
             "If provided, the file is moved to vault/Done/ after sending."
         ),
     )
+    from_account: str = Field(
+        default="default",
+        description=(
+            "Which configured Gmail account to send from — matches the `account:` "
+            "field on the originating EMAIL_*.md task (e.g. 'default' for the "
+            "personal inbox, 'work' for the job-related inbox). Falls back to "
+            "'default' if not specified or if the named account isn't configured."
+        ),
+    )
 
     @field_validator("to")
     @classmethod
@@ -128,6 +151,15 @@ class SendReplyInput(BaseModel):
             "Filename of the approval .md file in vault/Approved/ authorising this reply."
         ),
     )
+    from_account: str = Field(
+        default="default",
+        description=(
+            "Which configured Gmail account to send from — matches the `account:` "
+            "field on the originating EMAIL_*.md task (e.g. 'default' for the "
+            "personal inbox, 'work' for the job-related inbox). Falls back to "
+            "'default' if not specified or if the named account isn't configured."
+        ),
+    )
 
     @field_validator("to")
     @classmethod
@@ -140,32 +172,49 @@ class SendReplyInput(BaseModel):
 # ── Shared helpers ─────────────────────────────────────────────────────────────
 
 
-def _check_credentials() -> Optional[str]:
-    """Return an error string if Gmail credentials are missing."""
-    if not GMAIL_USER:
-        return "Error: GMAIL_USER is not set in .env"
-    if not GMAIL_APP_PASSWORD:
-        return "Error: GMAIL_APP_PASSWORD is not set in .env"
+def _resolve_account(from_account: str) -> dict[str, str]:
+    """Return the credential dict for from_account, falling back to 'default'."""
+    return ACCOUNTS.get(from_account, ACCOUNTS["default"])
+
+
+def _check_credentials(from_account: str = "default") -> Optional[str]:
+    """Return an error string if the requested account's Gmail credentials are missing."""
+    creds = _resolve_account(from_account)
+    if not creds["user"]:
+        return f"Error: GMAIL_USER (account '{from_account}') is not set in .env"
+    if not creds["app_password"]:
+        return f"Error: GMAIL_APP_PASSWORD (account '{from_account}') is not set in .env"
     return None
 
 
-def _send_via_smtp(to: str, subject: str, body: str, extra_headers: dict = {}) -> dict:
+def _send_via_smtp(
+    to: str, subject: str, body: str, extra_headers: dict = {}, from_account: str = "default"
+) -> dict:
     """
-    Send an email via Gmail SMTP.
+    Send an email via Gmail SMTP using the credentials for from_account.
 
     Returns a dict with keys: success (bool), message (str).
     Respects DRY_RUN — logs but does not connect when true.
     """
+    creds = _resolve_account(from_account)
+    gmail_user = creds["user"]
+    gmail_app_password = creds["app_password"]
+
     if DRY_RUN:
-        log.info("[DRY RUN] Would send email to=%s subject=%s", to, subject)
+        log.info(
+            "[DRY RUN] Would send email from_account=%s to=%s subject=%s",
+            from_account,
+            to,
+            subject,
+        )
         return {
             "success": True,
-            "message": f"[DRY RUN] Email to '{to}' logged but NOT sent (DRY_RUN=true). "
-            "Set DRY_RUN=false in .env to enable live sending.",
+            "message": f"[DRY RUN] Email to '{to}' (from account '{from_account}') logged but "
+            "NOT sent (DRY_RUN=true). Set DRY_RUN=false in .env to enable live sending.",
         }
 
     msg = MIMEMultipart("alternative")
-    msg["From"] = GMAIL_USER
+    msg["From"] = gmail_user
     msg["To"] = to
     msg["Subject"] = subject
     msg["Date"] = datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S +0000")
@@ -176,16 +225,19 @@ def _send_via_smtp(to: str, subject: str, body: str, extra_headers: dict = {}) -
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
-            server.sendmail(GMAIL_USER, [to], msg.as_string())
-        log.info("Email sent to=%s subject=%s", to, subject)
-        return {"success": True, "message": f"Email successfully sent to '{to}'."}
+            server.login(gmail_user, gmail_app_password)
+            server.sendmail(gmail_user, [to], msg.as_string())
+        log.info("Email sent from_account=%s to=%s subject=%s", from_account, to, subject)
+        return {
+            "success": True,
+            "message": f"Email successfully sent to '{to}' from '{gmail_user}'.",
+        }
     except smtplib.SMTPAuthenticationError:
         return {
             "success": False,
             "message": (
-                "Error: Gmail authentication failed. "
-                "Check GMAIL_USER and GMAIL_APP_PASSWORD in .env. "
+                f"Error: Gmail authentication failed for account '{from_account}'. "
+                "Check its GMAIL_USER/GMAIL_APP_PASSWORD in .env. "
                 "Make sure you are using an App Password, not your account password."
             ),
         }
@@ -271,11 +323,13 @@ async def email_send(params: SendEmailInput) -> str:
         - Don't use when: No approval file exists in vault/Approved/
         - Don't use when: The approval has expired (check expires field first)
     """
-    err = _check_credentials()
+    err = _check_credentials(params.from_account)
     if err:
         return json.dumps({"success": False, "message": err, "dry_run": DRY_RUN})
 
-    result = _send_via_smtp(params.to, params.subject, params.body)
+    result = _send_via_smtp(
+        params.to, params.subject, params.body, from_account=params.from_account
+    )
 
     archive_status = "No approval file specified."
     if params.approval_file and result["success"]:
@@ -335,7 +389,7 @@ async def email_send_reply(params: SendReplyInput) -> str:
         - Use when: Replying to a client email that arrived via gmail_watcher
         - Don't use when: You want to start a new thread (use email_send instead)
     """
-    err = _check_credentials()
+    err = _check_credentials(params.from_account)
     if err:
         return json.dumps({"success": False, "message": err, "dry_run": DRY_RUN})
 
@@ -344,7 +398,9 @@ async def email_send_reply(params: SendReplyInput) -> str:
         "References": params.in_reply_to,
     }
 
-    result = _send_via_smtp(params.to, params.subject, params.body, extra_headers)
+    result = _send_via_smtp(
+        params.to, params.subject, params.body, extra_headers, from_account=params.from_account
+    )
 
     archive_status = "No approval file specified."
     if params.approval_file and result["success"]:
@@ -424,8 +480,8 @@ async def email_list_approved() -> str:
 # ── Entry point ────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     log.info(
-        "Email MCP Server starting | user=%s | dry_run=%s | vault=%s",
-        GMAIL_USER or "NOT SET",
+        "Email MCP Server starting | accounts=%s | dry_run=%s | vault=%s",
+        list(ACCOUNTS.keys()),
         DRY_RUN,
         VAULT,
     )

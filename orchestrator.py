@@ -1,3 +1,4 @@
+import os
 import subprocess
 import time
 import logging
@@ -18,58 +19,61 @@ logging.basicConfig(
     ],
 )
 
-WATCHER_DONE_DIR = Path(__file__).parent / "watchers" / "done"
-WATCHER_TODO_DIR = Path(__file__).parent / "watchers" / "todo"
+WATCHERS_DIR = Path(__file__).parent / "watchers"
 
 
-def start_watcher(script_name):
-    script_path = WATCHER_DONE_DIR / script_name
+def start_watcher(script_name, extra_env=None):
+    script_path = WATCHERS_DIR / script_name
     if not script_path.exists():
         logging.error(f"Script not found: {script_path}")
         return None
 
-    return subprocess.Popen([sys.executable, str(script_path)])
+    env = os.environ.copy()
+    if extra_env:
+        env.update(extra_env)
+    return subprocess.Popen([sys.executable, str(script_path)], env=env)
 
 
 def main():
     watchers = {}
-    done_scripts = [
-        "gmail_watcher.py",
-        "linkedin_watcher.py",
-        "filesystem_watcher.py",  # Watchdog event-driven Inbox watcher
-        "approval_watcher.py",  # Approved → Action dispatcher
+    # (script_name, display_name, extra_env) — display_name must be unique even
+    # when the same script is launched multiple times (e.g. one gmail_watcher.py
+    # process per Gmail account), since it's used as the watchers dict key.
+    watcher_configs = [
+        ("gmail_watcher.py", "gmail_watcher (personal)", {"GMAIL_ACCOUNT_LABEL": "default"}),
+        ("gmail_watcher.py", "gmail_watcher (work)", {"GMAIL_ACCOUNT_LABEL": "work"}),
+        ("linkedin_watcher.py", "linkedin_watcher", None),
+        ("filesystem_watcher.py", "filesystem_watcher", None),  # Watchdog event-driven Inbox watcher
+        ("approval_watcher.py", "approval_watcher", None),  # Approved → Action dispatcher
+        ("telegram_approval_watcher.py", "telegram_approval_watcher", None),  # Pending_Approval → Telegram ping
+        ("discord_approval_watcher.py", "discord_approval_watcher", None),  # Pending_Approval → Discord ping (redundant channel, Telegram is intermittently blocked in Pakistan)
     ]
-    todo_scripts = []
 
     print("\n--- AI Employee Orchestrator ---")
 
-    # Start all done watchers
-    for script in done_scripts:
-        proc = start_watcher(script)
+    for script, name, env in watcher_configs:
+        proc = start_watcher(script, env)
         if proc:
-            watchers[script] = proc
-            print(f"[OK] {script.replace('.py', '')} - running (PID: {proc.pid})")
+            watchers[name] = (script, env, proc)
+            print(f"[OK] {name} - running (PID: {proc.pid})")
         else:
-            print(f"[FAIL] {script.replace('.py', '')} - failed to start")
-
-    # Note todo watchers
-    for script in todo_scripts:
-        print(f"[TODO] {script.replace('.py', '')} - not built yet")
+            print(f"[FAIL] {name} - failed to start")
 
     print("---------------------------------\n")
 
     try:
         while True:
-            for name, proc in watchers.items():
-                if proc.poll() is not None:
+            for name, (script, env, proc) in list(watchers.items()):
+                if proc is None or proc.poll() is not None:
+                    exit_code = proc.returncode if proc is not None else "failed to start"
                     logging.warning(
-                        f"Watcher {name} crashed (Exit code: {proc.returncode}). Restarting..."
+                        f"Watcher {name} is not running (Exit code: {exit_code}). Restarting..."
                     )
-                    watchers[name] = start_watcher(name)
+                    watchers[name] = (script, env, start_watcher(script, env))
             time.sleep(10)
     except KeyboardInterrupt:
         logging.info("Shutting down orchestrator...")
-        for proc in watchers.values():
+        for _, _, proc in watchers.values():
             proc.terminate()
 
 

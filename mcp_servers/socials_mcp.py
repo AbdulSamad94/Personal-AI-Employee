@@ -34,7 +34,7 @@ def socials_post_message(
     log_entry = {
         "timestamp": datetime.now().isoformat(),
         "action_type": f"{platform}_post",
-        "actor": "qwen via socials_mcp",
+        "actor": "opencode via socials_mcp",
         "parameters": {"message": message, "media_urls": media_urls},
         "result": "success",
     }
